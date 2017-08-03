@@ -7,6 +7,13 @@ JASPER_VERSION="${JASPER_VERSION:-1.900.1.uuid}"
 GDAL_VERSION="${GDAL_VERSION:-2.2.1}"
 SQLITE3_VERSION="${SQLITE3_VERSION:-3200000}"
 JSON_C_VERSION="${JSON_C_VERSION:-0.12.1}"
+EXPAT_VERSION="${EXPAT_VERSION:-2.2.3}"
+
+# Sleep time for keeping travis build alive
+PING_SLEEP=30s
+
+# Show output for debugging
+set -x
 
 function build_geos {
     build_simple geos $GEOS_VERSION http://download.osgeo.org/geos
@@ -40,10 +47,21 @@ function build_json_c {
     build_simple json-c $JSON_C_VERSION https://s3.amazonaws.com/json-c_releases/releases
 }
 
+function build_expat {
+    if [ -e expat-stamp ]; then return; fi
+    fetch_unpack https://downloads.sourceforge.net/project/expat/expat/${EXPAT_VERSION}/expat-${EXPAT_VERSION}.tar.bz2
+    (cd expat-${EXPAT_VERSION} \
+        && ./configure --prefix=$BUILD_PREFIX \
+        && make \
+        && make install)
+    touch expat-stamp
+}
+
 function build_gdal {
     if [ -e gdal-stamp ]; then return; fi
     build_zlib
     build_curl
+    build_expat
     build_json_c
     build_geos
     build_jpeg
@@ -52,6 +70,16 @@ function build_gdal {
     build_proj
     build_hdf5
     fetch_unpack http://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz
+    # Set up a repeating loop to send some output to Travis.  From
+    # https://github.com/conda-forge/libgdal-feedstock/blob/master/recipe/build.sh
+    # with thanks.
+    bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" &
+    local ping_loop_pid=$!
+    if [ -n "$IS_OSX" ]; then
+        local opts="--enable-rpath"
+    else
+        local opts="--disable-rpath"
+    fi
     (cd gdal-${GDAL_VERSION} \
         && ./configure --disable-debug \
         --with-threads \
@@ -82,8 +110,10 @@ function build_gdal {
         --with-curl=curl-config \
         --without-python \
         --prefix=$BUILD_PREFIX \
+        $opts \
         && make \
         && make install)
+    kill $ping_loop_pid
     touch gdal-stamp
 }
 
@@ -94,7 +124,7 @@ function pre_build {
 }
 
 function build_wheel {
-    build_pip_wheel gdal/swig/python
+    build_pip_wheel gdal/gdal/swig/python
 }
 
 function run_tests {
