@@ -1,0 +1,126 @@
+env:
+  global:
+      - REPO_DIR="gdal"
+      # Also see DAILY_COMMIT below
+      - BUILD_COMMIT="tags/2.2.1"
+      - PLAT=x86_64
+      - UNICODE_WIDTH=32
+      - NP_BUILD_DEP="numpy==1.8.2"
+      - NP_TEST_DEP="$NP_BUILD_DEP"
+      - GEN_DEPS=""
+      - WHEELHOUSE_UPLOADER_USERNAME=travis-worker
+      # Following generated with
+      # travis encrypt -r MacPython/gdal-wheels WHEELHOUSE_UPLOADER_SECRET=<the api key>
+      - secure: "j87jRAm0xLR+kQgm/lAv1fjezR3benO6hsNthNo+vzCSMGL8jJy8PcTlDpd/R8kA4ue5D7jVVRzN2IZZBpDEq6pba2s/yGE9pLDxtoVkKOp+naDFwYUnTtK8JC+AEn1Fu2aLaxjiHQTalt7z7OOd42sojHI3nZ/LsPeEbcb0F9CdPYn8THXd50vhnq6Ysp3SCoYtdITDMcyh8EaUJb1/XHJWV6ZTBCLng/JxAS+567IdpZ8utp8+/+YQllznDfkw57Sy3dsiHVfmFO33032GIYSGl7KtxtyD1b5zPi7O5bNwNvHN0d7Xp7unNvMWYQB7Uwv6dQzHMTKIhvQ56UFI1ySjPwdAhFunaRJm+rY59toXJEo6iqHP+3l0TozqlV6oTfD6XOnLB5PS3/ej3+DIDMVHXnRX6fiG/5qL0pifn//Refrt3/lYKBBidZT6JtqLXNSxG+5LldRkvJJa5FDOcnVYQF70tJCkHWc12vON1iv2jc12hKpxUSpywRk4nJpJTRsY7cX6DYlbkbkp0p8AfKF5kb9dSILLV+G90IYwm3/iYNU/X40pjqMjFX7W8d5QX9Q1WOsambzfswGHawG+U6TRJezBPUSQDS5jVu5kg7eSenR1qRcsDLfaANi3r4cHn192nra+MQKmxjS3KHXQDN4hni9hKROchQtiLlquDQQ="
+      # Commit when running from daily branch
+      - DAILY_COMMIT=trunk
+
+language: python
+# Default Python version is usually 2.7
+python: 3.5
+sudo: required
+dist: trusty
+services: docker
+
+matrix:
+  exclude:
+      # Exclude the default Python 3.5 build
+      - python: 3.5
+  include:
+    - os: linux
+      env:
+        - MB_PYTHON_VERSION=2.7
+    - os: linux
+      env:
+        - MB_PYTHON_VERSION=2.7
+        - UNICODE_WIDTH=16
+    - os: linux
+      env:
+        - MB_PYTHON_VERSION=2.7
+        - PLAT=i686
+    - os: linux
+      env:
+        - MB_PYTHON_VERSION=2.7
+        - PLAT=i686
+        - UNICODE_WIDTH=16
+    - os: linux
+      env:
+        - MB_PYTHON_VERSION=3.4
+        - NP_TEST_DEP=numpy==1.11.3
+    - os: linux
+      env:
+        - MB_PYTHON_VERSION=3.4
+        - NP_TEST_DEP=numpy==1.11.3
+        - PLAT=i686
+    - os: linux
+      env:
+        - MB_PYTHON_VERSION=3.5
+        - NP_BUILD_DEP=numpy==1.12.0
+        - NP_TEST_DEP=numpy==1.12.0
+    - os: linux
+      env:
+        - MB_PYTHON_VERSION=3.5
+        - PLAT=i686
+        - NP_BUILD_DEP=numpy==1.11.3
+        - NP_TEST_DEP=numpy==1.11.3
+    - os: linux
+      env:
+        - MB_PYTHON_VERSION=3.6
+        - NP_BUILD_DEP=numpy==1.11.3
+        - NP_TEST_DEP=numpy==1.11.3
+    - os: linux
+      env:
+        - MB_PYTHON_VERSION=3.6
+        - PLAT=i686
+        - NP_BUILD_DEP=numpy==1.12.0
+        - NP_TEST_DEP=numpy==1.12.0
+    - os: osx
+      language: generic
+      env: MB_PYTHON_VERSION=2.7
+    - os: osx
+      language: generic
+      env:
+        - MB_PYTHON_VERSION=3.4
+        - NP_TEST_DEP=numpy==1.11.3
+    - os: osx
+      language: generic
+      env:
+        - MB_PYTHON_VERSION=3.5
+        - NP_BUILD_DEP=numpy==1.11.3
+        - NP_TEST_DEP=numpy==1.11.3
+    - os: osx
+      language: generic
+      env:
+        - MB_PYTHON_VERSION=3.6
+        - NP_BUILD_DEP=numpy==1.12.0
+        - NP_TEST_DEP=numpy==1.12.0
+
+before_install:
+    - if [ "$TRAVIS_BRANCH" == "daily" ]; then
+          CONTAINER="pre-release";
+          BUILD_COMMIT=${DAILY_COMMIT:-$BUILD_COMMIT};
+      else
+          CONTAINER=wheels;
+          UPLOAD_ARGS="--no-update-index";
+      fi
+    - BUILD_DEPENDS="$NP_BUILD_DEP Cython"
+    - TEST_DEPENDS="$NP_TEST_DEP pytest $GEN_DEPS"
+    - source multibuild/common_utils.sh
+    - source multibuild/travis_steps.sh
+    - before_install
+
+install:
+    # Maybe get and clean and patch source
+    - clean_code $REPO_DIR $BUILD_COMMIT
+    - build_wheel $REPO_DIR $PLAT
+
+script:
+    - install_run $PLAT
+
+after_success:
+    # Upload wheels to Rackspace container
+    - pip install wheelhouse-uploader
+    - python -m wheelhouse_uploader upload --local-folder
+          ${TRAVIS_BUILD_DIR}/wheelhouse/
+          $UPLOAD_ARGS
+          $CONTAINER
