@@ -57,6 +57,22 @@ function build_expat {
     touch expat-stamp
 }
 
+function start_pings {
+    # Set up a repeating loop to send some output to Travis.  From
+    # https://github.com/conda-forge/libgdal-feedstock/blob/master/recipe/build.sh
+    # with thanks.
+    local ping_sleep="${1:-30s}"
+    bash -c "while true; do echo \$(date) - building ...; sleep $ping_sleep; done" &
+    PING_LOOP_PID=$!
+}
+
+
+function stop_pings {
+    if [ -n "$PING_LOOP_PID" ]; then
+        kill $PING_LOOP_PID
+    fi
+}
+
 function build_gdal {
     if [ -e gdal-stamp ]; then return; fi
     build_zlib
@@ -70,17 +86,13 @@ function build_gdal {
     build_proj
     build_hdf5
     fetch_unpack http://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz
-    # Set up a repeating loop to send some output to Travis.  From
-    # https://github.com/conda-forge/libgdal-feedstock/blob/master/recipe/build.sh
-    # with thanks.
-    bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" &
-    local ping_loop_pid=$!
     if [ -n "$IS_OSX" ]; then
         local opts="--enable-rpath"
     else
         local opts="--disable-rpath"
     fi
     (cd gdal-${GDAL_VERSION} \
+        && start_pings $PING_SLEEP \
         && ./configure --disable-debug \
         --with-threads \
         --disable-debug \
@@ -112,8 +124,8 @@ function build_gdal {
         --prefix=$BUILD_PREFIX \
         $opts \
         && make \
-        && make install)
-    kill $ping_loop_pid
+        && make install ;
+        stop_pings)
     touch gdal-stamp
 }
 
