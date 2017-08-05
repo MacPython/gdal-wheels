@@ -15,7 +15,7 @@ EXPAT_VERSION="${EXPAT_VERSION:-2.2.3}"
 PING_SLEEP=30s
 
 function build_geos {
-    build_simple proj $GEOS_VERSION http://download.osgeo.org/geos .tar.bz2
+    build_simple geos $GEOS_VERSION http://download.osgeo.org/geos .tar.bz2
 }
 
 function build_jasper {
