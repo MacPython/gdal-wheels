@@ -108,7 +108,7 @@ function build_gdal {
         --with-pam \
         --with-geos=$BUILD_PREFIX/bin/geos-config \
         --with-static-proj4=$BUILD_PREFIX \
-        --with-expat=/usr \
+        --with-expat=$BUILD_PREFIX \
         --with-libjson-c \
         --with-libiconv-prefix=/usr \
         --with-libz \
