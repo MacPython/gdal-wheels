@@ -62,11 +62,6 @@ function stop_pings {
 
 function build_gdal {
     if [ -e gdal-stamp ]; then return; fi
-    if [ -n "$IS_OSX" ]; then
-        brew install gdal
-        touch gdal-stamp
-        return
-    fi
     build_zlib
     build_curl
     build_expat
