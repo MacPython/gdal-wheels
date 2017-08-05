@@ -6,17 +6,16 @@ PROJ_VERSION="${PROJ_VERSION:-4.9.3}"
 JASPER_VERSION="${JASPER_VERSION:-1.900.1.uuid}"
 GDAL_VERSION="${GDAL_VERSION:-2.2.1}"
 SQLITE3_VERSION="${SQLITE3_VERSION:-3200000}"
+# Becaue the URL will change with the version
+SQLITE3_URL=https://sqlite.org/2017
 JSON_C_VERSION="${JSON_C_VERSION:-0.12.1}"
 EXPAT_VERSION="${EXPAT_VERSION:-2.2.3}"
 
 # Sleep time for keeping travis build alive
 PING_SLEEP=30s
 
-# Show output for debugging
-set -x
-
 function build_geos {
-    build_simple geos $GEOS_VERSION http://download.osgeo.org/geos
+    build_simple proj $GEOS_VERSION http://download.osgeo.org/geos .tar.bz2
 }
 
 function build_jasper {
@@ -34,13 +33,7 @@ function build_proj {
 }
 
 function build_sqlite3 {
-    if [ -e sqlite3-stamp ]; then return; fi
-    fetch_unpack https://sqlite.org/2017/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz 
-    (cd sqlite3-autoconf-${SQLITE3_VERSION} \
-        && ./configure --prefix=$BUILD_PREFIX \
-        && make \
-        && make install)
-    touch sqlite3-stamp
+    build_simple sqlite-autoconf $SQLITE3_VERSION $SQLITE3_URL
 }
 
 function build_json_c {
@@ -48,13 +41,7 @@ function build_json_c {
 }
 
 function build_expat {
-    if [ -e expat-stamp ]; then return; fi
-    fetch_unpack https://downloads.sourceforge.net/project/expat/expat/${EXPAT_VERSION}/expat-${EXPAT_VERSION}.tar.bz2
-    (cd expat-${EXPAT_VERSION} \
-        && ./configure --prefix=$BUILD_PREFIX \
-        && make \
-        && make install)
-    touch expat-stamp
+    build_simple expat $EXPAT_VERSION https://downloads.sourceforge.net/project/expat/expat/${EXPAT_VERSION} .tar.bz2
 }
 
 function start_pings {
@@ -83,10 +70,11 @@ function build_gdal {
     build_zlib
     build_curl
     build_expat
+    build_sqlite3
     build_json_c
     build_geos
     build_jpeg
-    build_png
+    build_libpng
     build_jasper
     build_proj
     build_hdf5

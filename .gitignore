@@ -1,0 +1,8 @@
+*.pyc
+arch_tmp/
+working/
+downloads/
+venv/
+.travis.sh
+build/
+*-stamp
