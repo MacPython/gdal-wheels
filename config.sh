@@ -82,7 +82,7 @@ function build_gdal {
     else
         local opts="--disable-rpath"
     fi
-    (cd ${CONFIG_SH_DIR}/gdal \
+    (cd ${CONFIG_SH_DIR}/gdal/gdal \
         && start_pings $PING_SLEEP \
         && ./configure --disable-debug \
         --with-threads \
