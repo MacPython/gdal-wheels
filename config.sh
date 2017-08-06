@@ -67,7 +67,6 @@ function build_gdal {
     echo "Here"
     build_zlib
     echo "After here"
-    return
     build_curl
     build_expat
     build_sqlite3
