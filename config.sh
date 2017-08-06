@@ -14,6 +14,8 @@ EXPAT_VERSION="${EXPAT_VERSION:-2.2.3}"
 # Sleep time for keeping travis build alive
 PING_SLEEP=30s
 
+CONFIG_SH_DIR=$(dirname "${BASH_SOURCE[0]}")
+
 function build_geos {
     build_simple geos $GEOS_VERSION http://download.osgeo.org/geos .tar.bz2
 }
@@ -62,7 +64,10 @@ function stop_pings {
 
 function build_gdal {
     if [ -e gdal-stamp ]; then return; fi
+    echo "Here"
     build_zlib
+    echo "After here"
+    return
     build_curl
     build_expat
     build_sqlite3
@@ -73,13 +78,12 @@ function build_gdal {
     build_jasper
     build_proj
     build_hdf5
-    fetch_unpack http://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz
     if [ -n "$IS_OSX" ]; then
         local opts="--enable-rpath"
     else
         local opts="--disable-rpath"
     fi
-    (cd gdal-${GDAL_VERSION} \
+    (cd ${CONFIG_SH_DIR}/gdal && \
         && start_pings $PING_SLEEP \
         && ./configure --disable-debug \
         --with-threads \
@@ -120,10 +124,12 @@ function build_gdal {
 function pre_build {
     # Any stuff that you need to do before you start building the wheels
     # Runs in the root directory of this repository.
+    echo "In pre-build"
     build_gdal
 }
 
 function build_wheel {
+    echo "In build wheel"
     build_pip_wheel gdal/gdal/swig/python
 }
 
