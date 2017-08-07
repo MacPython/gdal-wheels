@@ -77,17 +77,10 @@ function build_gdal {
     build_jasper
     build_proj
     build_hdf5
-    if [ -n "$IS_OSX" ]; then
-        local opts="--enable-rpath"
-    else
-        local opts="--disable-rpath"
-    fi
     (cd ${CONFIG_SH_DIR}/gdal/gdal \
-        && start_pings $PING_SLEEP \
-        && ./configure --disable-debug \
+        && ./configure \
         --with-threads \
         --disable-debug \
-        --disable-static \
         --without-grass \
         --without-libgrass \
         --without-jpeg12 \
@@ -113,10 +106,8 @@ function build_gdal {
         --with-curl=curl-config \
         --without-python \
         --prefix=$BUILD_PREFIX \
-        $opts \
         && make \
-        && make install ;
-        stop_pings)
+        && make install )
     touch gdal-stamp
 }
 
