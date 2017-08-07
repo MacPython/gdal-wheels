@@ -64,9 +64,7 @@ function stop_pings {
 
 function build_gdal {
     if [ -e gdal-stamp ]; then return; fi
-    echo "Here"
     build_zlib
-    echo "After here"
     build_curl
     build_expat
     build_sqlite3
@@ -114,12 +112,10 @@ function build_gdal {
 function pre_build {
     # Any stuff that you need to do before you start building the wheels
     # Runs in the root directory of this repository.
-    echo "In pre-build"
     build_gdal
 }
 
 function build_wheel {
-    echo "In build wheel"
     build_pip_wheel gdal/gdal/swig/python
 }
 
